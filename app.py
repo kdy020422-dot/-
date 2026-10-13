@@ -24,17 +24,50 @@ df = load_data()
 tab1, tab2, tab3 = st.tabs(["📝 가계부 및 자산 입력", "📊 실시간 대시보드", "📈 투자 포트폴리오"])
 
 # --- TAB 1: 데이터 입력 ---
+# --- TAB 1: 데이터 입력 ---
 with tab1:
     st.header("현금흐름 및 자산 변동 입력")
-    with st.form("입력 폼"):
-        date = st.date_input("날짜", datetime.today())
-        type_ = st.selectbox("유형", ["수입", "지출", "자산 업데이트(예금/적금)"])
-        category = st.selectbox("카테고리", ["근로소득/용돈", "식비 및 외식비", "고정지출", "교통비", "망실(출처불명)", "주식투자", "기타"])
-        amount = st.number_input("금액 (원)", min_value=0, step=1000)
-        memo = st.text_input("상세 내역")
-        
-        submitted = st.form_submit_button("저장하기")
-        if submitted:
+    
+    # 동적 UI(직접 입력 시 새 창 띄우기)를 위해 st.form 대신 일반 위젯으로 배치합니다.
+    date = st.date_input("날짜", datetime.today())
+    type_ = st.selectbox("유형", ["지출", "수입", "자산 업데이트(예금/적금)"])
+
+    # 1. 유형에 따라 기본 카테고리 목록 설정
+    if type_ == "수입":
+        categories = [
+            "용돈 및 지원금", "근로 소득(급여/알바)", "현장 실습/인턴비", 
+            "금융 소득(이자/배당)", "투자 수익(매도금)", "장학금/학교 지원금", 
+            "정부 지원/장려금", "환불 및 모임 정산금", "부수입(중고거래 등)", "기타 수입"
+        ]
+    elif type_ == "지출":
+        categories = [
+            "식비 및 외식비", "고정지출(구독/통신)", "교통비", "쇼핑/생필품", 
+            "취미/여가", "여행비용", "망실(출처불명)", "기타 지출"
+        ]
+    else:
+        categories = ["보통예금 잔액", "적금 납입액", "주식 투자금"]
+
+    # 2. 리스트 맨 끝에 '직접 입력' 옵션을 추가
+    categories.append("📝 직접 입력 (새로 작성하기)")
+
+    # 3. 카테고리 선택 위젯
+    selected_category = st.selectbox("카테고리 선택", categories)
+
+    # 4. '직접 입력' 선택 시 텍스트 입력창 표시
+    if selected_category == "📝 직접 입력 (새로 작성하기)":
+        category = st.text_input("원하시는 카테고리명을 직접 입력해주세요")
+    else:
+        category = selected_category
+
+    amount = st.number_input("금액 (원)", min_value=0, step=1000)
+    memo = st.text_input("상세 내역")
+    
+    # st.form_submit_button 대신 일반 st.button 사용
+    if st.button("저장하기"):
+        # 직접 입력을 골랐는데 아무것도 안 적었을 경우 경고
+        if selected_category == "📝 직접 입력 (새로 작성하기)" and category.strip() == "":
+            st.warning("직접 입력할 카테고리명을 비워둘 수 없습니다!")
+        else:
             new_data = pd.DataFrame([{"날짜": date, "유형": type_, "카테고리": category, "금액": amount, "내역": memo}])
             df = pd.concat([df, new_data], ignore_index=True)
             df.to_csv(DATA_FILE, index=False)
