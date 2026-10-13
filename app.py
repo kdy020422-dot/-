@@ -26,10 +26,22 @@ def save_client(name):
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
+        try:
+            df = pd.read_csv(DATA_FILE)
+            # 만약 예전 버전의 파일이라 '고객명' 컬럼이 없다면 자동으로 만들어줌
+            if "고객명" not in df.columns:
+                df["고객명"] = "기본고객"
+                df.to_csv(DATA_FILE, index=False)
+            return df
+        except Exception:
+            # 파일이 깨졌거나 읽을 수 없을 때 새로 생성
+            df = pd.DataFrame(columns=["고객명", "날짜", "유형", "카테고리", "금액", "내역"])
+            df.to_csv(DATA_FILE, index=False)
+            return df
     else:
-        # 고객명 컬럼이 추가되었습니다.
-        return pd.DataFrame(columns=["고객명", "날짜", "유형", "카테고리", "금액", "내역"])
+        df = pd.DataFrame(columns=["고객명", "날짜", "유형", "카테고리", "금액", "내역"])
+        df.to_csv(DATA_FILE, index=False)
+        return df
 
 # 3. 화면 전환을 위한 세션 상태(Session State) 초기화
 # 'selected_client'에 고객 이름이 담기면 대시보드를 띄우고, 비어있으면 명부를 띄웁니다.
